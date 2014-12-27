@@ -12,24 +12,42 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
+import configparser
+
 class Languages():
     langs = []
     actions = {}
     icons = {}
 
-    def __init__(self):
+    def __init__(self, parent = None):
+        self.config = configparser.ConfigParser()
+        self.parent = parent
         self.load()
 
     def load(self):
-        print("load")
+        if self.config.read('tlay.conf'):
+            if 'Languages' in self.config:
+                languages = self.config['Languages']
+                for index in range(0,len(languages)):
+                    self.add(languages[str(index)], languages[str(index)])
+            else:
+                self.createConfig()
+        else:
+            self.createConfig()
 
     def save(self):
         print("save")
 
-    def add(self, lang, img, parent):
+    def createConfig(self):
+        self.config['Languages'] = {0:'us', 1:'tr'}
+        with open('tlay.conf', 'w') as configFile:
+            self.config.write(configFile)
+        self.load()
+
+    def add(self, lang, img):
         Languages.langs.append(lang)
-        Languages.actions[lang] = QAction(lang, parent)
-        Languages.icons[lang] = QIcon(img)
+        Languages.actions[lang] = QAction(lang, self.parent)
+        Languages.icons[lang] = QIcon(img+".png")
         
 class SystemTray(QSystemTrayIcon):
     wheelUp = pyqtSignal()
@@ -75,10 +93,7 @@ class MainForm(QWidget):
         self.about.move((self.displayWidth-self.about.size().width())/2, 
                 (self.displayHeight-self.about.size().height())/4)
 
-        self.languages = Languages()
-        self.languages.add("us", "us.png", self)
-        self.languages.add("tr", "tr.png", self)
-        self.languages.add("de", "de.png", self)
+        self.languages = Languages(self)
 
         self.tray = SystemTray(QIcon("us.png"), self)
 
